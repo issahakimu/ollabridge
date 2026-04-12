@@ -9,6 +9,7 @@ description     = "Connect local Ollama AI to shared PHP hosting — no static I
 readme          = "README.md"
 requires-python = ">=3.10"
 license         = { text = "MIT" }
+authors         = [{ name = "Issa Hakimu" }]
 keywords        = ["ollama", "ai", "shared-hosting", "bridge", "llm"]
 dependencies    = [
     "requests>=2.31.0",

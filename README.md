@@ -2,6 +2,8 @@
 
 **Connect your local Ollama AI to any shared-hosting PHP website — no static IP, no relay, no cloud.**
 
+**Developer:** Issa Hakimu
+
 OllaBridge is a headless Python worker that runs on your local machine and bridges it to your web server using a simple polling queue. Your website submits AI jobs; the worker picks them up, runs them through Ollama locally, and posts results back — all initiated from your side, so firewalls and NAT are never a problem.
 
 ---
@@ -106,7 +108,9 @@ All settings can also be passed as CLI flags or environment variables:
 
 ---
 
-## Server setup (shared hosting)
+## Server setup (Example Integration)
+
+The `server/` folder provides a reference PHP implementation. It is intended as an **example** to show you how to integrate OllaBridge into your existing project. You can adapt these scripts to any language (Node.js, Python, Ruby, etc.) as long as the API endpoints match.
 
 Upload everything from the `server/` folder to `public_html/ollabridge/` on your host:
 
