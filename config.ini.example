@@ -1,0 +1,45 @@
+# OllaBridge Worker Configuration
+# Copy this file to config.ini and fill in your values.
+# All settings can also be passed as CLI flags or environment variables.
+# Priority: CLI flags > Environment variables > config.ini > built-in defaults
+
+[ollabridge]
+
+# ── Required ─────────────────────────────────────────────────────────
+# Your shared hosting website URL (no trailing slash)
+site_url = https://yoursite.com
+
+# A strong secret key — MUST match the value in server/config.php
+secret_key = CHANGE_THIS_TO_A_STRONG_RANDOM_SECRET
+
+# ── Ollama Settings ───────────────────────────────────────────────────
+# Ollama API URL (change only if you moved Ollama to another port)
+ollama_host = http://localhost:11434
+
+# The model to use by default for incoming jobs
+# Override per-job by setting "model" in the job JSON
+default_model = gemma4:e2b
+
+# If the requested model cannot be found/pulled, use this one instead
+fallback_model = llama3.2
+
+# Automatically start `ollama serve` if Ollama is not running (true/false)
+auto_start_ollama = true
+
+# Automatically run `ollama pull <model>` if requested model is missing
+auto_pull_model = true
+
+# ── Polling Settings ──────────────────────────────────────────────────
+# Seconds to wait between polls when there are no pending jobs
+poll_interval = 5
+
+# Maximum number of jobs to fetch per poll request
+job_limit = 5
+
+# ── Storage ───────────────────────────────────────────────────────────
+# Path to the local SQLite file used for deduplication and history
+db_path = local_jobs.db
+
+# ── Logging ───────────────────────────────────────────────────────────
+# Log verbosity: DEBUG | INFO | WARNING | ERROR
+log_level = INFO

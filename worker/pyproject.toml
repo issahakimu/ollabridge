@@ -1,0 +1,30 @@
+[build-system]
+requires      = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name            = "ollabridge"
+version         = "1.0.0"
+description     = "Connect local Ollama AI to shared PHP hosting — no static IP, no relay"
+readme          = "README.md"
+requires-python = ">=3.10"
+license         = { text = "MIT" }
+keywords        = ["ollama", "ai", "shared-hosting", "bridge", "llm"]
+dependencies    = [
+    "requests>=2.31.0",
+    "ollama>=0.3.3",
+    "rich>=13.7.0",
+]
+
+# This is the magic — creates `ollabridge` executable just like `uvicorn` or `fastapi`
+[project.scripts]
+ollabridge = "ollabridge:main"
+
+[tool.setuptools]
+# Include ollabridge.py as a top-level module
+py-modules = ["ollabridge"]
+
+[tool.setuptools.packages.find]
+# Also include the config/ and modules/ sub-packages
+where   = ["."]
+include = ["config", "config.*", "modules", "modules.*"]

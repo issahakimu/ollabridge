@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.eggs/
+dist/
+build/
+build_tmp/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OllaBridge runtime — never commit these
+config.ini
+*.db
+*.log
+ollabridge_export_*.sql
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PyInstaller output
+dist/
+build_tmp/

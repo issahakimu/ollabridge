@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OllaBridge — AI Playground</title>
+    <meta name="description" content="Test your local Ollama AI connected via OllaBridge">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:           #07090f;
+            --surface:      #0d1117;
+            --card:         #111827;
+            --border:       rgba(255,255,255,0.06);
+            --border-glow:  rgba(0,212,255,0.3);
+            --primary:      #00d4ff;
+            --primary-dim:  rgba(0,212,255,0.08);
+            --purple:       #8b5cf6;
+            --purple-dim:   rgba(139,92,246,0.10);
+            --success:      #22c55e;
+            --error:        #ef4444;
+            --warning:      #f59e0b;
+            --text:         #e2e8f0;
+            --text-muted:   #64748b;
+            --text-dim:     #94a3b8;
+            --radius:       12px;
+            --radius-lg:    18px;
+            --radius-sm:    8px;
+            --mono:         'JetBrains Mono', 'Consolas', monospace;
+            --glow:         0 0 24px rgba(0,212,255,0.12);
+        }
+
+        html, body { height: 100%; font-family: 'Inter', system-ui, sans-serif; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        /* Ambient gradients */
+        body::before {
+            content: '';
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background:
+                radial-gradient(ellipse 70% 50% at 15% 0%,   rgba(0,212,255,0.05) 0%, transparent 65%),
+                radial-gradient(ellipse 50% 40% at 85% 100%,  rgba(139,92,246,0.05) 0%, transparent 65%);
+        }
+
+        /* ═══ APP SHELL ════════════════════════════════════════ */
+        .app {
+            position: relative; z-index: 1;
+            height: 100vh;
+            display: flex; flex-direction: column;
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        /* ═══ HEADER ═══════════════════════════════════════════ */
+        header {
+            display: flex; align-items: center; gap: 12px;
+            padding: 13px 20px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(7,9,15,0.85);
+            backdrop-filter: blur(16px);
+            flex-shrink: 0;
+        }
+
+        .logo { display: flex; align-items: center; gap: 10px; }
+
+        .logo-icon {
+            width: 42px; height: 42px; border-radius: 10px;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .logo-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+
+        .logo-name { font-size: 15px; font-weight: 700; letter-spacing: -.3px; }
+        .logo-name span { color: var(--primary); }
+        .logo-tag {
+            font-size: 10px; color: var(--text-muted); font-weight: 500;
+            letter-spacing: .5px; text-transform: uppercase;
+        }
+
+        /* Mode toggle */
+        .mode-toggle {
+            display: flex;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 3px;
+        }
+        .mode-btn {
+            padding: 5px 13px; border: none; background: none; cursor: pointer;
+            border-radius: 5px; font-size: 12px; font-weight: 500;
+            color: var(--text-muted); font-family: inherit; transition: all .2s;
+        }
+        .mode-btn.active { background: var(--primary-dim); color: var(--primary); }
+        .mode-btn:hover:not(.active) { color: var(--text-dim); }
+
+        /* Controls */
+        .hdr-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+
+        .model-select {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); color: var(--text);
+            font-size: 12px; font-family: inherit; padding: 6px 10px;
+            cursor: pointer; outline: none; transition: border-color .2s;
+        }
+        .model-select:hover, .model-select:focus { border-color: var(--primary); }
+
+        /* Worker status pill */
+        .w-status {
+            display: flex; align-items: center; gap: 6px; padding: 5px 11px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 20px; font-size: 11px; font-weight: 500;
+            color: var(--text-muted); white-space: nowrap; transition: all .3s;
+        }
+        .w-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--text-muted); flex-shrink: 0; transition: all .3s;
+        }
+        .w-status.live   { color: var(--success); border-color: rgba(34,197,94,.2); }
+        .w-status.live .w-dot { background: var(--success); box-shadow: 0 0 6px var(--success); animation: blink 2s infinite; }
+        .w-status.busy   { color: var(--warning); border-color: rgba(245,158,11,.2); }
+        .w-status.busy .w-dot { background: var(--warning); box-shadow: 0 0 6px var(--warning); animation: blink 1s infinite; }
+
+        @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+
+        /* ═══ JOB STATUS BAR ════════════════════════════════════ */
+        .job-bar {
+            display: none; align-items: center; gap: 10px;
+            padding: 7px 20px;
+            background: rgba(0,212,255,0.04);
+            border-bottom: 1px solid rgba(0,212,255,0.1);
+            font-size: 12px; color: var(--primary);
+        }
+        .job-bar.show { display: flex; }
+        .job-spin {
+            width: 14px; height: 14px; flex-shrink: 0;
+            border: 2px solid rgba(0,212,255,.15);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin .75s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ═══ MESSAGES AREA ═════════════════════════════════════ */
+        .messages {
+            flex: 1; overflow-y: auto;
+            padding: 24px 20px;
+            display: flex; flex-direction: column; gap: 20px;
+            scroll-behavior: smooth;
+        }
+        .messages::-webkit-scrollbar { width: 4px; }
+        .messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
+
+        /* Welcome */
+        .welcome {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 18px; flex: 1;
+            text-align: center; padding: 40px 20px;
+            animation: fadein .5s ease;
+        }
+        .welcome-icon {
+            width: 96px; height: 96px; border-radius: 22px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .welcome-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .welcome h2 { font-size: 22px; font-weight: 700; letter-spacing: -.4px; }
+        .welcome h2 span { color: var(--primary); }
+        .welcome p { font-size: 14px; color: var(--text-muted); max-width: 380px; line-height: 1.7; }
+
+        .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }
+        .chip {
+            padding: 8px 15px; background: var(--card);
+            border: 1px solid var(--border); border-radius: 20px;
+            font-size: 12.5px; cursor: pointer; transition: all .2s; color: var(--text-dim);
+        }
+        .chip:hover { border-color: var(--border-glow); color: var(--primary); background: var(--primary-dim); }
+
+        /* ── Message bubbles ── */
+        .message {
+            display: flex; flex-direction: column; gap: 7px;
+            max-width: 84%; animation: slideup .3s ease;
+        }
+        .message.user { align-self: flex-end; align-items: flex-end; }
+        .message.ai   { align-self: flex-start; align-items: flex-start; }
+
+        @keyframes slideup { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+        @keyframes fadein  { from { opacity:0; } to { opacity:1; } }
+
+        .msg-label {
+            font-size: 11px; font-weight: 600; color: var(--text-muted);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .model-tag {
+            font-size: 10px; padding: 1px 6px;
+            background: var(--purple-dim); color: var(--purple);
+            border: 1px solid rgba(139,92,246,.2); border-radius: 10px;
+        }
+
+        .bubble {
+            padding: 12px 16px; border-radius: var(--radius-lg);
+            font-size: 14px; line-height: 1.7; word-break: break-word;
+        }
+        .message.user .bubble {
+            background: linear-gradient(135deg, rgba(0,212,255,.14), rgba(0,150,220,.18));
+            border: 1px solid rgba(0,212,255,.18);
+            border-bottom-right-radius: 4px;
+        }
+        .message.ai .bubble {
+            background: rgba(255,255,255,.03);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+        }
+
+        /* Code inside AI response */
+        .bubble pre {
+            background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.07);
+            border-radius: 8px; padding: 12px 14px;
+            margin: 10px 0 4px; overflow-x: auto;
+            font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+        }
+        .bubble code {
+            font-family: var(--mono); font-size: 12.5px;
+            background: rgba(0,0,0,.35); padding: 1px 5px; border-radius: 4px;
+        }
+
+        /* Message footer (copy + time) */
+        .msg-foot {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .copy-btn {
+            display: flex; align-items: center; gap: 4px;
+            padding: 3px 9px; background: var(--card);
+            border: 1px solid var(--border); border-radius: 6px;
+            font-size: 11px; color: var(--text-muted); cursor: pointer;
+            font-family: inherit; transition: all .2s;
+            opacity: 0;
+        }
+        .message:hover .copy-btn { opacity: 1; }
+        .copy-btn:hover { color: var(--primary); border-color: var(--border-glow); }
+        .msg-time { font-size: 11px; color: var(--text-muted); }
+
+        /* Typing indicator */
+        .typing {
+            align-self: flex-start;
+            animation: slideup .3s ease;
+        }
+        .typing-bubble {
+            padding: 14px 18px; border-radius: var(--radius-lg);
+            border-bottom-left-radius: 4px;
+            background: rgba(255,255,255,.03);
+            border: 1px solid var(--border);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .dots { display: flex; gap: 5px; align-items: center; }
+        .dots span {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--primary); animation: bounce 1.2s infinite;
+        }
+        .dots span:nth-child(2) { animation-delay: .15s; }
+        .dots span:nth-child(3) { animation-delay: .30s; }
+        @keyframes bounce { 0%,60%,100% { transform:translateY(0); opacity:.4; } 30% { transform:translateY(-6px); opacity:1; } }
+
+        .typing-info {
+            font-size: 11px; color: var(--text-muted);
+            display: flex; align-items: center; gap: 7px;
+        }
+        .t-badge {
+            padding: 1px 8px; border-radius: 10px;
+            font-size: 10px; font-weight: 600;
+        }
+        .t-badge.pending    { background: rgba(245,158,11,.1);  color: var(--warning); }
+        .t-badge.processing { background: rgba(0,212,255,.1);   color: var(--primary); }
+
+        /* Error bubble */
+        .err-bubble {
+            background: rgba(239,68,68,.05) !important;
+            border-color: rgba(239,68,68,.2) !important;
+            color: #fca5a5 !important;
+        }
+
+        /* ═══ INPUT AREA ════════════════════════════════════════ */
+        .input-area {
+            padding: 14px 20px 18px;
+            border-top: 1px solid var(--border);
+            background: rgba(7,9,15,.88);
+            backdrop-filter: blur(16px);
+            flex-shrink: 0;
+        }
+        .input-row { display: flex; gap: 10px; align-items: flex-end; }
+
+        textarea#prompt {
+            flex: 1;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius); color: var(--text);
+            font-family: inherit; font-size: 14px; line-height: 1.55;
+            padding: 12px 15px; resize: none; outline: none;
+            min-height: 48px; max-height: 160px;
+            transition: border-color .2s, box-shadow .2s;
+            overflow-y: auto;
+        }
+        textarea#prompt::placeholder { color: var(--text-muted); }
+        textarea#prompt:focus { border-color: rgba(0,212,255,.4); box-shadow: var(--glow); }
+
+        .send-btn {
+            width: 46px; height: 46px; border-radius: var(--radius);
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            border: none; cursor: pointer; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            transition: all .2s;
+            box-shadow: 0 4px 16px rgba(0,212,255,.28);
+        }
+        .send-btn svg { width: 18px; height: 18px; fill: #fff; pointer-events: none; }
+        .send-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 7px 22px rgba(0,212,255,.4); }
+        .send-btn:active:not(:disabled) { transform: translateY(0); }
+        .send-btn:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
+
+        .input-foot {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-top: 8px;
+        }
+        .input-hint { font-size: 11px; color: var(--text-muted); }
+        .clear-btn {
+            font-size: 11px; color: var(--text-muted); background: none; border: none;
+            cursor: pointer; font-family: inherit; transition: color .2s;
+        }
+        .clear-btn:hover { color: var(--error); }
+
+        /* ═══ RESPONSIVE ════════════════════════════════════════ */
+        @media (max-width: 600px) {
+            header { padding: 10px 14px; }
+            .logo-tag, .mode-toggle { display: none; }
+            .messages { padding: 14px; }
+            .message { max-width: 95%; }
+            .input-area { padding: 12px 14px 16px; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+
+    <!-- ── Header ───────────────────────────────────────── -->
+    <header>
+        <div class="logo">
+            <div class="logo-icon"><img src="assets/logo.png" alt="OllaBridge"></div>
+            <div>
+                <div class="logo-name">Olla<span>Bridge</span></div>
+                <div class="logo-tag">Local AI Demo</div>
+            </div>
+        </div>
+
+        <div class="mode-toggle">
+            <button class="mode-btn active" data-mode="chat"     onclick="setMode('chat')">💬 Chat</button>
+            <button class="mode-btn"         data-mode="generate" onclick="setMode('generate')">⚡ Generate</button>
+        </div>
+
+        <div class="hdr-right">
+            <select class="model-select" id="modelSelect">
+                <option value="gemma4:e2b" selected>gemma4:e2b</option>
+                <option value="gemma4:e4b">gemma4:e4b</option>
+                <option value="llama3.2">llama3.2</option>
+                <option value="qwen2.5-coder">qwen2.5-coder</option>
+            </select>
+
+            <div class="w-status" id="wStatus">
+                <div class="w-dot"></div>
+                <span id="wStatusTxt">Idle</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── Job status bar ────────────────────────────────── -->
+    <div class="job-bar" id="jobBar">
+        <div class="job-spin"></div>
+        <span id="jobBarTxt">Submitting…</span>
+    </div>
+
+    <!-- ── Messages ─────────────────────────────────────── -->
+    <div class="messages" id="messages">
+        <div class="welcome" id="welcome">
+            <div class="welcome-icon"><img src="assets/logo.png" alt="OllaBridge"></div>
+            <h2>Ask <span id="welcomeModel">gemma4:e2b</span> anything</h2>
+            <p>Your local AI is connected via OllaBridge.<br>Type below or pick a starter prompt.</p>
+            <div class="chips">
+                <div class="chip" onclick="chip(this)">Write a PHP function to validate email</div>
+                <div class="chip" onclick="chip(this)">Explain REST APIs in simple words</div>
+                <div class="chip" onclick="chip(this)">Write a Python script to read a CSV file</div>
+                <div class="chip" onclick="chip(this)">What is the difference between SQL and NoSQL?</div>
+                <div class="chip" onclick="chip(this)">How do I center a div in CSS?</div>
+                <div class="chip" onclick="chip(this)">Translate "Hello, how are you?" to Swahili</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Input ─────────────────────────────────────────── -->
+    <div class="input-area">
+        <div class="input-row">
+            <textarea id="prompt"
+                placeholder="Ask anything… (Enter to send, Shift+Enter for new line)"
+                rows="1"
+                onkeydown="onKey(event)"
+                oninput="resize(this)"></textarea>
+            <button class="send-btn" id="sendBtn" onclick="send()" title="Send">
+                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+        </div>
+        <div class="input-foot">
+            <span class="input-hint" id="modeHint">Chat mode — history is maintained across messages</span>
+            <button class="clear-btn" onclick="clearChat()">🗑 Clear chat</button>
+        </div>
+    </div>
+
+</div><!-- /.app -->
+
+<script>
+/* ══════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════ */
+const S = {
+    mode:          'chat',
+    model:         'gemma4:e2b',
+    history:       [],        // [{role,content}] for chat mode
+    busy:          false,
+    pollTimer:     null,
+    jobStart:      0,
+};
+
+/* ══════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════ */
+document.getElementById('modelSelect').addEventListener('change', function () {
+    S.model = this.value;
+    const el = document.getElementById('welcomeModel');
+    if (el) el.textContent = this.value;
+});
+
+/* ══════════════════════════════════════════════════════
+   MODE
+══════════════════════════════════════════════════════ */
+function setMode(m) {
+    S.mode = m;
+    document.querySelectorAll('.mode-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.mode === m)
+    );
+    document.getElementById('modeHint').textContent = m === 'chat'
+        ? 'Chat mode — history is maintained across messages'
+        : 'Generate mode — each prompt is independent';
+}
+
+/* ══════════════════════════════════════════════════════
+   INPUT HELPERS
+══════════════════════════════════════════════════════ */
+function resize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+
+function onKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+}
+
+function chip(el) {
+    const ta = document.getElementById('prompt');
+    ta.value = el.textContent;
+    resize(ta);
+    ta.focus();
+}
+
+/* ══════════════════════════════════════════════════════
+   SEND
+══════════════════════════════════════════════════════ */
+async function send() {
+    const ta   = document.getElementById('prompt');
+    const text = ta.value.trim();
+    if (!text || S.busy) return;
+
+    S.busy = true;
+    ta.value = '';
+    resize(ta);
+    document.getElementById('sendBtn').disabled = true;
+
+    // Remove welcome screen
+    const w = document.getElementById('welcome');
+    if (w) w.remove();
+
+    // Append user bubble
+    appendUser(text);
+
+    // Update chat history
+    if (S.mode === 'chat') S.history.push({ role: 'user', content: text });
+
+    // Show typing + status
+    const typingEl = appendTyping();
+    setWStatus('busy', 'Sending…');
+    showBar('Queueing job…');
+    S.jobStart = Date.now();
+
+    try {
+        const jobId = await submitJob(text);
+        showBar(`Job queued — waiting for worker to pick up…`);
+        await pollResult(jobId, typingEl);
+    } catch (err) {
+        typingEl.remove();
+        hideBar();
+        appendError(err.message || 'Failed. Is XAMPP + OllaBridge worker running?');
+        done();
+    }
+}
+
+/* ══════════════════════════════════════════════════════
+   SUBMIT JOB
+══════════════════════════════════════════════════════ */
+async function submitJob(text) {
+    const body = S.mode === 'chat'
+        ? { type: 'chat',     model: S.model, messages: [...S.history] }
+        : { type: 'generate', model: S.model, prompt:   text           };
+
+    const r = await fetch('submit_job.php', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body),
+    });
+
+    const data = await r.json();
+    if (!r.ok || !data.job_id) throw new Error(data.error || `HTTP ${r.status}`);
+    return data.job_id;
+}
+
+/* ══════════════════════════════════════════════════════
+   POLL RESULT
+══════════════════════════════════════════════════════ */
+function pollResult(jobId, typingEl) {
+    return new Promise((resolve) => {
+        let tries = 0;
+        const MAX = 180;   // 180 × 2s = 6 min
+
+        S.pollTimer = setInterval(async () => {
+            if (++tries > MAX) {
+                clearInterval(S.pollTimer);
+                typingEl.remove();
+                hideBar();
+                appendError('Timed out. Make sure the OllaBridge worker is running.');
+                done();
+                return resolve();
+            }
+
+            let data;
+            try {
+                const r = await fetch(`get_result.php?job_id=${jobId}`);
+                data = await r.json();
+            } catch { return; }   // transient network error — keep polling
+
+            // Update badge inside typing bubble
+            const badge = typingEl.querySelector('.t-badge');
+            if (badge) { badge.className = `t-badge ${data.status}`; badge.textContent = data.status; }
+
+            if (data.status === 'processing') {
+                setWStatus('busy', 'Processing…');
+                showBar(`Worker is running ${S.model}…`);
+            }
+
+            if (data.status === 'completed') {
+                clearInterval(S.pollTimer);
+                typingEl.remove();
+                hideBar();
+                setWStatus('live', 'Worker Active');
+
+                const ms = Date.now() - S.jobStart;
+                appendAI(data.result, ms);
+
+                if (S.mode === 'chat')
+                    S.history.push({ role: 'assistant', content: data.result });
+
+                done();
+                resolve();
+            }
+
+            if (data.status === 'failed') {
+                clearInterval(S.pollTimer);
+                typingEl.remove();
+                hideBar();
+                appendError(data.error_msg || 'Job failed — check worker logs.');
+                done();
+                resolve();
+            }
+        }, 2000);
+    });
+}
+
+/* ══════════════════════════════════════════════════════
+   DOM BUILDERS
+══════════════════════════════════════════════════════ */
+function appendUser(text) {
+    const el = mk(`
+        <div class="message user">
+            <div class="msg-label">You</div>
+            <div class="bubble">${esc(text)}</div>
+        </div>`);
+    push(el);
+}
+
+function appendAI(text, ms) {
+    const secs = (ms / 1000).toFixed(1);
+    const html = fmt(text);
+    const el = mk(`
+        <div class="message ai">
+            <div class="msg-label">
+                AI <span class="model-tag">${esc(S.model)}</span>
+            </div>
+            <div class="bubble" data-raw="">${html}</div>
+            <div class="msg-foot">
+                <button class="copy-btn" onclick="copyMsg(this)">📋 Copy</button>
+                <span class="msg-time">⏱ ${secs}s</span>
+            </div>
+        </div>`);
+    el.querySelector('.bubble').dataset.raw = text;
+    push(el);
+}
+
+function appendError(msg) {
+    push(mk(`
+        <div class="message ai">
+            <div class="msg-label">System</div>
+            <div class="bubble err-bubble">⚠️ ${esc(msg)}</div>
+        </div>`));
+}
+
+function appendTyping() {
+    const el = mk(`
+        <div class="typing" id="typingEl">
+            <div class="msg-label">AI <span class="model-tag">${esc(S.model)}</span></div>
+            <div class="typing-bubble">
+                <div class="dots"><span></span><span></span><span></span></div>
+                <div class="typing-info">
+                    <span class="t-badge pending">pending</span>
+                    <span>Waiting for worker…</span>
+                </div>
+            </div>
+        </div>`);
+    push(el);
+    return el;
+}
+
+function push(el) {
+    const c = document.getElementById('messages');
+    c.appendChild(el);
+    c.scrollTop = c.scrollHeight;
+}
+
+function mk(html) {
+    const d = document.createElement('div');
+    d.innerHTML = html.trim();
+    return d.firstChild;
+}
+
+/* ══════════════════════════════════════════════════════
+   ACTIONS
+══════════════════════════════════════════════════════ */
+function copyMsg(btn) {
+    const raw = btn.closest('.message').querySelector('.bubble').dataset.raw;
+    navigator.clipboard.writeText(raw).then(() => {
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000);
+    });
+}
+
+function clearChat() {
+    if (S.busy) return;
+    S.history = [];
+    document.getElementById('messages').innerHTML = `
+        <div class="welcome" id="welcome">
+            <div class="welcome-icon"><img src="assets/logo.png" alt="OllaBridge"></div>
+            <h2>Ask <span id="welcomeModel">${esc(S.model)}</span> anything</h2>
+            <p>Chat cleared. Type a new message or pick a starter prompt.</p>
+            <div class="chips">
+                <div class="chip" onclick="chip(this)">Write a PHP function to validate email</div>
+                <div class="chip" onclick="chip(this)">Explain REST APIs in simple words</div>
+                <div class="chip" onclick="chip(this)">Write a Python script to read a CSV file</div>
+                <div class="chip" onclick="chip(this)">What is the difference between SQL and NoSQL?</div>
+                <div class="chip" onclick="chip(this)">How do I center a div in CSS?</div>
+                <div class="chip" onclick="chip(this)">Translate "Hello, how are you?" to Swahili</div>
+            </div>
+        </div>`;
+    setWStatus('', 'Idle');
+}
+
+function done() {
+    S.busy = false;
+    document.getElementById('sendBtn').disabled = false;
+    document.getElementById('prompt').focus();
+}
+
+/* ══════════════════════════════════════════════════════
+   STATUS HELPERS
+══════════════════════════════════════════════════════ */
+function setWStatus(cls, txt) {
+    const el = document.getElementById('wStatus');
+    el.className = 'w-status ' + cls;
+    document.getElementById('wStatusTxt').textContent = txt;
+}
+
+function showBar(msg) {
+    const b = document.getElementById('jobBar');
+    b.classList.add('show');
+    document.getElementById('jobBarTxt').textContent = msg;
+}
+
+function hideBar() {
+    document.getElementById('jobBar').classList.remove('show');
+}
+
+/* ══════════════════════════════════════════════════════
+   FORMATTING
+══════════════════════════════════════════════════════ */
+function fmt(text) {
+    let s = esc(text);
+
+    // Fenced code blocks (``` ... ```)
+    s = s.replace(/```[\w]*\n?([\s\S]*?)```/g, (_, c) =>
+        `<pre>${c.trimEnd()}</pre>`);
+
+    // Inline code
+    s = s.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+
+    // Bold
+    s = s.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+
+    // Italic
+    s = s.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+
+    // Newlines
+    s = s.replace(/\n/g, '<br>');
+
+    return s;
+}
+
+function esc(t) {
+    return String(t)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
