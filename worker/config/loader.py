@@ -49,7 +49,9 @@ def load_config(args=None, config_file="config.ini") -> dict:
 
 
 def save_config(config: dict, config_file="config.ini"):
-    """Persist config to an INI file (omits None values)."""
+    """Persist config to an INI file (omits None values). Creates parent dirs if needed."""
+    import pathlib
+    pathlib.Path(config_file).parent.mkdir(parents=True, exist_ok=True)
     parser = configparser.ConfigParser()
     parser["ollabridge"] = {}
     for key, val in config.items():

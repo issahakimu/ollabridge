@@ -90,7 +90,8 @@ Environment Variables:
 
     # ── setup ────────────────────────────────────────────────
     setup_p = sub.add_parser("setup", help="Interactive setup wizard")
-    setup_p.add_argument("--config", metavar="FILE", default="config.ini")
+    setup_p.add_argument("--config", metavar="FILE",
+                          default=str(Path.home() / ".config/ollabridge/config.ini"))
     setup_p.add_argument("--ollama-host", dest="ollama_host", metavar="URL",
                          default="http://localhost:11434")
 
@@ -250,7 +251,7 @@ def _pick_model(prompt_label: str, default: str, ollama_host: str) -> str:
 # ──────────────────────────────────────────────────────────────
 
 def cmd_setup(args):
-    config_file  = getattr(args, "config",      "config.ini")
+    config_file  = getattr(args, "config", None) or str(Path.home() / ".config/ollabridge/config.ini")
     ollama_host  = getattr(args, "ollama_host", "http://localhost:11434")
 
     console.print(Panel("[bold cyan]OllaBridge Setup Wizard[/]", expand=False))
@@ -342,7 +343,7 @@ def cmd_setup(args):
 
     console.print()
     console.print(f"[bold green]✅  Config saved → {config_file}[/]")
-    console.print(f"[dim]Run the worker:  python ollabridge.py run --config {config_file}[/]")
+    console.print(f"[dim]Run the worker:  ollabridge run[/]")
 
 
 # ──────────────────────────────────────────────────────────────
@@ -350,7 +351,7 @@ def cmd_setup(args):
 # ──────────────────────────────────────────────────────────────
 
 def cmd_status(args):
-    config_file = getattr(args, "config", None) or "config.ini"
+    config_file = getattr(args, "config", None) or str(Path.home() / ".config/ollabridge/config.ini")
     config = load_config(args=args, config_file=config_file)
 
     console.print(Panel("[bold cyan]OllaBridge Status[/]", expand=False))
@@ -401,7 +402,7 @@ def cmd_status(args):
 # ──────────────────────────────────────────────────────────────
 
 def cmd_run(args):
-    config_file = getattr(args, "config", None) or "config.ini"
+    config_file = getattr(args, "config", None) or str(Path.home() / ".config/ollabridge/config.ini")
     config = load_config(args=args, config_file=config_file)
 
     missing = [k for k in ("site_url", "secret_key") if not config.get(k)]
