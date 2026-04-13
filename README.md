@@ -6,8 +6,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux-lightgrey)](https://github.com/issahakimu/ollabridge)
 
-**Developed by [Issa Hakimu](https://github.com/issahakimu)**
-
 ---
 
 OllaBridge is a headless Python worker that runs on your local machine and bridges it to your web server using a simple polling queue. Your website submits AI jobs; the worker picks them up, runs them through [Ollama](https://ollama.ai) locally, and posts results back — all initiated from your side, so firewalls and NAT are never a problem.
@@ -236,7 +234,7 @@ ollabridge/
 
 ## Author
 
-**Issa Hakimu** — [github.com/issahakimu](https://github.com/issahakimu)
+Made by [@issahakimu](https://github.com/issahakimu) — contributions and feedback welcome.
 
 ---
 
