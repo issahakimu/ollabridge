@@ -5,12 +5,18 @@ build-backend = "setuptools.build_meta"
 [project]
 name            = "ollabridge"
 version         = "1.0.0"
-description     = "Connect local Ollama AI to shared PHP hosting — no static IP, no relay"
+description     = "Connect local Ollama AI to shared PHP hosting — no static IP, no relay, no cloud"
 readme          = "README.md"
 requires-python = ">=3.10"
 license         = { text = "MIT" }
-authors         = [{ name = "Issa Hakimu" }]
 keywords        = ["ollama", "ai", "shared-hosting", "bridge", "llm"]
+authors         = [{name = "Issa Hakimu", email = "anonymous@horps.it.nf"}]
+
+[project.urls]
+Homepage   = "https://github.com/issahakimu/ollabridge"
+Repository = "https://github.com/issahakimu/ollabridge"
+Issues     = "https://github.com/issahakimu/ollabridge/issues"
+
 dependencies    = [
     "requests>=2.31.0",
     "ollama>=0.3.3",
