@@ -2,7 +2,7 @@
 Main polling loop — the heart of OllaBridge.
 
 Flow per cycle:
-  GET  /ollabridge/get_jobs.php  → list of pending jobs
+  GET  {site_url}/get_jobs.php  → list of pending jobs
   For each job:
     1. Deduplication check (SQLite)
     2. Mark 'processing' on server
@@ -11,6 +11,10 @@ Flow per cycle:
     5. Execute job via Ollama
     6. POST result back to server
     7. Record in SQLite
+
+NOTE: site_url is used exactly as configured — no path is appended automatically.
+      Example: https://mysite.com/ai   →  https://mysite.com/ai/get_jobs.php
+               https://mysite.com      →  https://mysite.com/get_jobs.php
 """
 import logging
 import time
@@ -52,7 +56,7 @@ class Poller:
 
     def _fetch_jobs(self) -> list:
         """GET pending jobs from the shared server. Returns list (may be empty)."""
-        url = f"{self.site_url}/ollabridge/get_jobs.php"
+        url = f"{self.site_url}/get_jobs.php"
         try:
             r = requests.get(
                 url,
@@ -79,7 +83,7 @@ class Poller:
         """Tell the server we are working on this job (prevents double-pickup)."""
         try:
             requests.post(
-                f"{self.site_url}/ollabridge/update_job.php",
+                f"{self.site_url}/update_job.php",
                 json={"job_id": job_id, "status": "processing"},
                 headers=self._headers,
                 timeout=HTTP_TIMEOUT,
@@ -91,7 +95,7 @@ class Poller:
         """POST the completed AI response back to the shared server."""
         try:
             r = requests.post(
-                f"{self.site_url}/ollabridge/update_job.php",
+                f"{self.site_url}/update_job.php",
                 json={"job_id": job_id, "status": "completed", "result": result},
                 headers=self._headers,
                 timeout=HTTP_TIMEOUT,
@@ -105,7 +109,7 @@ class Poller:
         """Report an unrecoverable job error back to the shared server."""
         try:
             requests.post(
-                f"{self.site_url}/ollabridge/update_job.php",
+                f"{self.site_url}/update_job.php",
                 json={"job_id": job_id, "status": "failed", "error": error},
                 headers=self._headers,
                 timeout=HTTP_TIMEOUT,

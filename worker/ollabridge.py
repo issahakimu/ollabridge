@@ -266,9 +266,11 @@ def cmd_setup(args):
 
     # ── Step 1: Site URL ─────────────────────────────────────
     console.print("[bold]Step 1 — Shared Hosting Server[/]")
+    console.print("  [dim]Enter the full URL to the directory where you uploaded the PHP files.[/]")
+    console.print("  [dim]Examples:  https://mysite.com/ollabridge   or   https://ai.mysite.com[/]")
     while True:
         site_url = Prompt.ask(
-            "  Site URL  (e.g. https://mysite.com)",
+            "  Server URL",
             default=existing.get("site_url") or "",
         ).strip().rstrip("/")
 
@@ -378,7 +380,7 @@ def cmd_status(args):
         import requests
         try:
             r = requests.get(
-                f"{config['site_url'].rstrip('/')}/ollabridge/get_jobs.php",
+                f"{config['site_url'].rstrip('/')}/get_jobs.php",
                 headers={"X-OllaBridge-Key": config["secret_key"]},
                 timeout=10,
             )
@@ -392,7 +394,7 @@ def cmd_status(args):
             t.add_row("Shared server", "[red]❌ Unreachable[/]", str(exc))
     else:
         t.add_row("Shared server", "[yellow]⚠  Not configured[/]",
-                  "run: python ollabridge.py setup")
+                  "run: ollabridge setup")
 
     console.print(t)
 
@@ -408,7 +410,7 @@ def cmd_run(args):
     missing = [k for k in ("site_url", "secret_key") if not config.get(k)]
     if missing:
         console.print(f"[bold red]❌  Missing required config: {', '.join(missing)}[/]")
-        console.print("[dim]Run: python ollabridge.py setup[/]  or pass via CLI flags.")
+        console.print("[dim]Run: ollabridge setup[/]  or pass via CLI flags.")
         sys.exit(1)
 
     log_level = getattr(logging, config.get("log_level", "INFO").upper(), logging.INFO)
@@ -500,7 +502,8 @@ def cmd_db(args):
     db_path = getattr(args, "db_path", None)
     if not db_path:
         try:
-            cfg = load_config(config_file="config.ini")
+            cfg_file = str(Path.home() / ".config/ollabridge/config.ini")
+            cfg = load_config(config_file=cfg_file)
             db_path = cfg.get("db_path", "local_jobs.db")
         except Exception:
             db_path = "local_jobs.db"
