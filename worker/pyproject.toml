@@ -11,17 +11,16 @@ requires-python = ">=3.10"
 license         = { text = "MIT" }
 keywords        = ["ollama", "ai", "shared-hosting", "bridge", "llm"]
 authors         = [{name = "Issa Hakimu", email = "anonymous@horps.it.nf"}]
-
-[project.urls]
-Homepage   = "https://github.com/issahakimu/ollabridge"
-Repository = "https://github.com/issahakimu/ollabridge"
-Issues     = "https://github.com/issahakimu/ollabridge/issues"
-
 dependencies    = [
     "requests>=2.31.0",
     "ollama>=0.3.3",
     "rich>=13.7.0",
 ]
+
+[project.urls]
+Homepage   = "https://github.com/issahakimu/ollabridge"
+Repository = "https://github.com/issahakimu/ollabridge"
+Issues     = "https://github.com/issahakimu/ollabridge/issues"
 
 # This is the magic — creates `ollabridge` executable just like `uvicorn` or `fastapi`
 [project.scripts]
